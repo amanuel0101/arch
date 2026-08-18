@@ -1,0 +1,10 @@
+base
+linux
+mkinitcpio
+mkinitcpio-archiso
+syslinux
+openssh
+
+plymouth
+gum
+nano

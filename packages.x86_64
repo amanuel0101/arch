@@ -1,10 +1,15 @@
-base
-linux
 mkinitcpio
 mkinitcpio-archiso
 syslinux
 openssh
 
+base
+linux
+linux-firmware
+arch-install-scripts
+archlinux-keyring
+
 plymouth
 gum
 nano
+dosfstools

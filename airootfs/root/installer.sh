@@ -20,6 +20,13 @@ export GUM_CONFIRM_SELECTED_BACKGROUND="2"
 export GUM_CONFIRM_UNSELECTED_FOREGROUND="7"
 export GUM_CONFIRM_UNSELECTED_BACKGROUND="0"
 
+PURPLE="57"
+PINK="212"
+
+ready_to_install=false
+user_form_confirmed=false
+disk_form_confirmed=false
+
 # ---------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------
@@ -44,7 +51,7 @@ measure_terminal() {
 clear_logo() {
   measure_terminal
   printf "\033[H\033[2J"
-  gum style --foreground "#8A9A7B" --padding "1 0 0 $PADDING_LEFT" "$(<"$LOGO_PATH")"
+  gum style --foreground 2 --padding "1 0 0 $PADDING_LEFT" "$(<"$LOGO_PATH")"
   echo
 }
 
@@ -53,32 +60,73 @@ notice() {
   gum spin --spinner "pulse" --title "$1" -- sleep "${2:-2}"
 }
 
+set_tty_colors_back() {
+  printf '\e]P0000000'
+  printf '\e]P1AA0000'
+  printf '\e]P200AA00'
+  printf '\e]P3AA5500'
+  printf '\e]P40000AA'
+  printf '\e]P5AA00AA'
+  printf '\e]P600AAAA'
+  printf '\e]P7AAAAAA'
+  printf '\e]P8555555'
+  printf '\e]P9FF5555'
+  printf '\e]PA55FF55'
+  printf '\e]PBFFFF55'
+  printf '\e]PC5555FF'
+  printf '\e]PDFF55FF'
+  printf '\e]PE55FFFF'
+  printf '\e]PFFFFFFF'
+  printf '\e[0m\e[2J\e[H'
+}
+
+set_tokyo_night_colors() {
+  echo -en "\e]P01a1b26"
+  echo -en "\e]P1f7768e"
+  echo -en "\e]P29ece6a"
+  echo -en "\e]P3e0af68"
+  echo -en "\e]P47aa2f7"
+  echo -en "\e]P5bb9af7"
+  echo -en "\e]P67dcfff"
+  echo -en "\e]P7a9b1d6"
+  echo -en "\e]P8414868"
+  echo -en "\e]P9f7768e"
+  echo -en "\e]PA9ece6a"
+  echo -en "\e]PBe0af68"
+  echo -en "\e]PC7aa2f7"
+  echo -en "\e]PDbb9af7"
+  echo -en "\e]PE7dcfff"
+  echo -en "\e]PFc0caf5"
+  echo -en "\033[0m"
+  clear
+}
+set_tokyo_night_colors
+
 # ---------------------------------------------------------
 # Username
 # ---------------------------------------------------------
 
-clear_logo
+omarchy_username_taken() { return 1; }
 
 omarchy_prompt_username() {
   local status
-
   while true; do
-    username=$(gum input \
-      --placeholder "Enter your username" \
-      --prompt.foreground="#795DCE" \
-      --prompt "Username> ") && status=0 || status=$?
-
+    username=$(gum input --placeholder "Alphanumeric without spaces (like abebe)" --prompt.foreground="$PURPLE" --prompt "Username> ") && status=0 || status=$?
     ((status == 0)) || return $status
 
-    if [[ "$username" =~ ^[a-zA-Z0-9]+$ ]]; then
-      return 0
+    if [[ "$username" =~ $OMARCHY_USERNAME_PATTERN ]]; then
+      if [[ "$username" =~ $OMARCHY_RESERVED_USERNAMES ]]; then
+        notice "Username is reserved for system" 1
+      elif omarchy_username_taken "$username"; then
+        notice "That username already exists on this machine" 1
+      else
+        return 0
+      fi
     else
       notice "Username must be alphanumeric with no spaces" 1
     fi
   done
 }
-
-omarchy_prompt_username
 
 # ---------------------------------------------------------
 # Password
@@ -86,37 +134,21 @@ omarchy_prompt_username
 
 omarchy_prompt_password() {
   local status
-
   while true; do
-    password=$(gum input \
-      --placeholder "Used for user + root, and disk encryption when enabled" \
-      --prompt.foreground="#795DCE" \
-      --password \
-      --prompt "Password> ") && status=0 || status=$?
-
+    password=$(gum input --placeholder "Used for user + root, and disk encryption when enabled" --prompt.foreground="$PURPLE" --password --prompt "Password> ") && status=0 || status=$?
     ((status == 0)) || return $status
-
-    password_confirmation=$(gum input \
-      --placeholder "Must match the password you just typed" \
-      --prompt.foreground="#795DCE" \
-      --password \
-      --prompt "Confirm> ") && status=0 || status=$?
-
+    password_confirmation=$(gum input --placeholder "Must match the password you just typed" --prompt.foreground="$PURPLE" --password --prompt "Confirm> ") && status=0 || status=$?
     ((status == 0)) || return $status
 
     if [[ -n "$password" && "$password" == "$password_confirmation" ]]; then
       return 0
-
     elif [[ -z "$password" ]]; then
       notice "Your password can't be blank!" 1
-
     else
       notice "Passwords didn't match!" 1
     fi
   done
 }
-
-omarchy_prompt_password
 
 # ---------------------------------------------------------
 # hostname
@@ -125,7 +157,7 @@ omarchy_prompt_password
 omarchy_prompt_hostname() {
   local status
   while true; do
-    hostname=$(gum input --placeholder "Letters, digits, and dashes (or return for 'arch')" --prompt.foreground="#795DCE" --prompt "Hostname> ") && status=0 || status=$?
+    hostname=$(gum input --placeholder "Letters, digits, and dashes (or return for '$OMARCHY_HOSTNAME_DEFAULT')" --prompt.foreground="$PURPLE" --prompt "Hostname> ") && status=0 || status=$?
     ((status == 0)) || return $status
 
     if [[ -z $hostname ]]; then
@@ -139,33 +171,60 @@ omarchy_prompt_hostname() {
   done
 }
 
-omarchy_prompt_hostname
-
 # ---------------------------------------------------------
 # timezone
 # ---------------------------------------------------------
 
 omarchy_prompt_timezone() {
   local guess status
-  guess=$(curl -fsS 'http://ip-api.com/line?fields=timezone' 2>/dev/null) || guess=""
+  guess=$(tzupdate -p 2>/dev/null) || guess=""
 
   if [[ -n $guess ]]; then
-    timezone=$(timedatectl list-timezones | gum choose --height 10 --selected "$guess" --header "Timezone" --header.foreground="#795DCE") && status=0 || status=$?
+    timezone=$(timedatectl list-timezones | gum choose --height 10 --selected "$guess" --header "Timezone") && status=0 || status=$?
   else
-    timezone=$(timedatectl list-timezones | gum filter --height 10 --header "Timezone" --header.foreground="#795DCE") && status=0 || status=$?
+    timezone=$(timedatectl list-timezones | gum filter --height 10 --header "Timezone") && status=0 || status=$?
   fi
   ((status == 0)) || return $status
 
   [[ -n $timezone ]] || timezone="UTC"
 }
 
-omarchy_prompt_timezone
+confirm_user_form() {
+  echo -e "Field, Value
+Username,$username
+Password,$(printf "%${#password}s" | tr ' ' '*')
+Hostname,$hostname
+Timezone,$timezone" |
+    gum table -p | sed "s/^/${PADDING_LEFT_SPACES}/"
+  echo
+  if gum confirm --negative "No, change it" "Does this look right?"; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+user_form() {
+  while true; do
+    clear_logo
+    omarchy_prompt_username
+    omarchy_prompt_password
+    omarchy_prompt_hostname
+    omarchy_prompt_timezone
+
+    if confirm_user_form; then
+      user_form_confirmed=true
+      clear_logo
+      break
+    fi
+  done
+}
 
 # ---------------------------------------------------------
 # disk
 # ---------------------------------------------------------
 
-disk_form() {
+disk_form1() {
   step "Let's select where to install Omarchy..."
 
   # Don't offer the install media as an option (Arch ISO mounts it here)
@@ -275,7 +334,7 @@ FREE_SPACE_INFO=$(parted -ms "$disk" unit B print free </dev/null 2>/dev/null |
 #  selected=$(printf '%s\n' "${options[@]}" | gum choose \
 #    --header "Select install disk" \
 #    --height 15 \
-#    --header.foreground="#795DCE")
+#    --header.foreground=4)
 #
 #  [[ -n "$selected" ]] || return 1
 #
@@ -290,28 +349,17 @@ FREE_SPACE_INFO=$(parted -ms "$disk" unit B print free </dev/null 2>/dev/null |
 select_install_disk() {
   local selected
 
-  selected=$(lsblk -dpno NAME,SIZE,MODEL -e 7,11 |
-    gum choose \
-      --header "Installation Disk" \
-      --header.foreground="#795DCE" \
-      --height 10) || return 1
+  selected=$(lsblk -dpno NAME,SIZE,MODEL -e 7,11 | gum choose --header "Installation Disk" --height 10) || return 1
 
   install_disk=$(awk '{print $1}' <<<"$selected")
 
   [[ -b "$install_disk" ]]
 }
 
-select_install_disk
-
 choose_disk_mode() {
   local choice
 
-  choice=$(printf '%s\n' \
-    "Use entire disk" \
-    "Select a partition" |
-    gum choose \
-      --header "How do you want to install?" \
-      --header.foreground="#795DCE") || return 1
+  choice=$(printf '%s\n' "Use entire disk" "Select a partition" | gum choose --header "How do you want to install?") || return 1
 
   case "$choice" in
   "Use entire disk")
@@ -324,8 +372,6 @@ choose_disk_mode() {
   esac
 }
 
-choose_disk_mode
-
 select_install_partition() {
   local selected
 
@@ -334,19 +380,15 @@ select_install_partition() {
       {
         lsblk -n "$install_disk"
         printf '%s\n' "Create a new partition"
-      } |
-        gum choose \
-          --header "Select Installation Partition" \
-          --header.foreground="#795DCE" \
-          --height 12
+      } | gum choose --header "Select Installation Partition" --height 12
     ) || return 1
 
     if [[ "$selected" == "Create a new partition" ]]; then
       if ! cfdisk "$install_disk"; then
-        gum style --foreground="#795DCE" \
-          "You can run the installer again with: ~/installer.sh"
+        gum style "You can run the installer again with: ~/installer.sh"
         return 1
       fi
+      clear_logo
       continue
     fi
 
@@ -359,17 +401,234 @@ select_install_partition() {
   done
 }
 
-if [[ "$install_mode" == "partition" ]]; then
-  select_install_partition
-fi
+confirm_disk_form() {
+  local mode
 
-echo $username
-echo $password
-echo $hostname
-echo $timezone
-echo $install_disk
-echo $install_mode
-echo $install_partition
+  case "$install_mode" in
+  "disk")
+    mode="Entire disk"
+    ;;
+
+  "partition")
+    mode="Partition"
+    ;;
+  esac
+
+  echo "$(
+    printf '%s\n' \
+      'Field, Value' \
+      "Disk,$install_disk" \
+      "Mode,$mode" \
+      "$(if [[ "$install_mode" == "partition" ]]; then
+        printf 'Partition,%s' "$install_partition"
+      fi)"
+  )" |
+    gum table -p | sed "s/^/${PADDING_LEFT_SPACES}/"
+  echo
+  if gum confirm --negative "No, change it" "Does this look right?"; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+disk_form() {
+  while true; do
+    clear_logo
+    select_install_disk
+    choose_disk_mode
+    if [[ "$install_mode" == "partition" ]]; then
+      select_install_partition
+    fi
+
+    if confirm_disk_form; then
+      disk_form_confirmed=true
+      clear_logo
+      break
+    fi
+  done
+}
+
+confirm_installation() {
+  while true; do
+    if ! $user_form_confirmed; then
+      notice "Fill the user form!"
+      user_form
+      continue
+    fi
+
+    if ! $disk_form_confirmed; then
+      notice "Fill the disk form!"
+      disk_form
+      continue
+    fi
+
+    local prompt
+    local affirm
+    if [[ "$install_mode" == "disk" ]]; then
+      prompt="Everything on $install_disk will be overwritten. Are you sure you want to install?"
+      affirm="Yes, format disk and install"
+    else
+      prompt="Partition $install_partition will be overwritten. Do you want to install?"
+      affirm="Yes, install"
+    fi
+
+    if gum confirm --affirmative "$affirm" --negative "No, change it" "$prompt"; then
+      ready_to_install=true
+      break
+    else
+      disk_form
+    fi
+  done
+}
+
+spin() {
+  clear_logo
+  gum spin --title "$1" --spinner line --padding "0 0 0 $PADDING_LEFT" -- bash -c "$2"
+}
+
+partition_disk() {
+
+  if [[ "$install_mode" == "disk" ]]; then
+    notice "Full disk install not available yet"
+    return 1
+  elif [[ "$install_mode" == "partition" ]]; then
+    root_partition="$install_partition"
+
+    if [[ ! -b "$root_partition" ]]; then
+      gum style \
+        --foreground="1" \
+        "Installation partition does not exist: $root_partition"
+      return 1
+    fi
+    if ! gum confirm "Format $root_partition as ext4?"; then
+      clear_logo
+      echo "Formatting partition aborted!"
+      return 1
+    fi
+
+    spin "Formatting $root_partition..." "mkfs.ext4 -F $root_partition" || {
+      gum style --foreground="1" "Failed to format $root_partition."
+      return 1
+    }
+
+    return 0
+  else
+    clear_logo
+    gum style --foreground 1 --padding "0 0 0 $PADDING_LEFT" "Invalid installation mode: '$install_mode'"
+    return 1
+  fi
+}
+
+mount_disk() {
+  mkdir -p /mnt || {
+    gum style --foreground 1 "Failed to create /mnt."
+    return 1
+  }
+
+  spin "Mounting $root_partition..." "mount $root_partition /mnt" || {
+    gum style --foreground 1 "Failed to mount $root_partition."
+    return 1
+  }
+}
+
+detect_mount_efi() {
+  efi_partition=$(
+    lsblk -nrpo NAME,PARTTYPE $install_disk |
+      awk 'tolower($2) == "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" {print $1; exit}'
+  )
+
+  if [[ -z $efi_partition ]]; then
+    gum style --foreground 1 "No EFI System Partition found on $install_disk"
+    return 1
+  fi
+
+  spin "Formatting $efi_partition..." "mkfs.fat -F 32 $efi_partition" || {
+    gum style --foreground 1 "Failed to format $efi_partition"
+    return 1
+  }
+
+  mkdir -p /mnt/boot || {
+    gum style --foreground 1 "Failed to create /mnt/boot"
+    return 1
+  }
+
+  spin "Mounting EFI partition..." "mount $efi_partition /mnt/boot" || {
+    gum style --foreground 1 "Failed to mount $efi_partition"
+    return 1
+  }
+}
+
+install_base() {
+  pacman -Sy || {
+    gum style --foreground 1 "Failed to sync pacman."
+    return 1
+  }
+
+  pacman-key --init || {
+    gum style --foreground 1 "Failed to initialize pacman keyring."
+    return 1
+  }
+
+  pacstrap -K --config /etc/pacman.conf /mnt base linux linux-firmware networkmanager hyprland || {
+    gum style --foreground 1 "Failed to install the base system."
+    return 1
+  }
+
+  notice "base system install complete."
+}
+
+install_arch() {
+  # if ! $ready_to_install; then
+  #   gum style --foreground 1 "not ready to install!"
+  #   return 1
+  # fi
+  #
+
+  clear_logo
+  gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "Installing arch..."
+  echo
+
+  # partitioning
+  if ! partition_disk; then
+    return 1
+  fi
+
+  # mount
+  if ! mount_disk; then
+    return 1
+  fi
+
+  # detect and mout EFI
+  if ! detect_mount_efi; then
+    return 1
+  fi
+
+  # pacstrap
+  if ! install_base; then
+    return 1
+  fi
+}
+
+start_install() {
+  user_form
+  disk_form
+  confirm_installation
+  install_arch
+}
+
+start_install
+
+dis() {
+  echo $username
+  echo $password
+  echo $hostname
+  echo $timezone
+  echo $install_disk
+  echo $install_mode
+  echo $install_partition
+}
+
 : <<'DISABLE'
 # ---------------------------------------------------------
 # Welcome

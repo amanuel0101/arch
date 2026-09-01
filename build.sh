@@ -8,23 +8,24 @@ TARGET_PKGS=$(grep -hv '^#\|^$' "$PROFILE_DIR/target-packages.txt")
 
 # Download into airootfs so mkarchiso includes them
 CACHE_DIR="$PROFILE_DIR/airootfs/var/cache/offline-mirror/pkg"
-mkdir -p "$CACHE_DIR"
+sudo mkdir -p "$CACHE_DIR"
 
-mkdir -p /tmp/offlinedb
+sudo mkdir -p /tmp/offlinedb
 
 # Use your existing pacman.conf (online) to fetch packages
-pacman --config pacman.conf --noconfirm -Syw \
+sudo pacman --config pacman.conf --noconfirm -Syw \
   $TARGET_PKGS \
   --cachedir "$CACHE_DIR" \
   --dbpath /tmp/offlinedb \
   --needed
 
 # Build the repo index
-repo-add "$CACHE_DIR/offline.db.tar.gz" "$CACHE_DIR/"*.pkg.tar.zst
+sudo repo-add "$CACHE_DIR/offline.db.tar.gz" "$CACHE_DIR/"*.pkg.tar.zst
 
 # Count expected packages for progress bar
 #echo "$TARGET_PKGS" | wc -w >"airootfs/usr/share/my-distro/expected-packages"
 
-rm -rf "$PROFILE_DIR"/work
-mkarchiso -v -w "$PROFILE_DIR/work" -o "$PROFILE_DIR/out" "$PROFILE_DIR"
+sudo rm -rf "$PROFILE_DIR"/work
+sudo rm -rf "$PROFILE_DIR"/out
+sudo mkarchiso -v -w "$PROFILE_DIR/work" -o "$PROFILE_DIR/out" "$PROFILE_DIR"
 notify-send "InFo" "DONE!!!"

@@ -1,15 +1,26 @@
+# baseline pkgs for iso to boot properly
+base
+cloud-init
+hyperv
+linux
 mkinitcpio
 mkinitcpio-archiso
-syslinux
+open-vm-tools
 openssh
+pv
+qemu-guest-agent
+syslinux
+virtualbox-guest-utils-nox
 
-base
-linux
-linux-firmware
-arch-install-scripts
-archlinux-keyring
-
-plymouth
+# for installer.sh
+# tui
 gum
+# debug
 nano
+# mkfs.fat32
 dosfstools
+# partprobe
+parted
+
+#arch-install-scripts
+#archlinux-keyring

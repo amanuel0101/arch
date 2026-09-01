@@ -1,5 +1,26 @@
+# core
 base
+base-devel
 linux
 linux-firmware
 networkmanager
+sudo
+grub
+efibootmgr
+
+
+git
+foot
+yazi
+chromium
+gnome-calculator
+rofi
 hyprland
+quickshell
+ttf-jetbrains-mono-nerd
+noto-fonts
+noto-fonts-emoji
+upower
+bluetui
+hyprpaper
+go

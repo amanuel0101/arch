@@ -1,0 +1,76 @@
+import QtQuick
+import Quickshell.Services.UPower
+import "theme"
+import ".."
+
+Rectangle {
+    property var battery: UPower.displayDevice
+    property bool charging: battery.state === UPowerDeviceState.Charging
+	property int level: Math.round(battery.percentage * 100)
+    readonly property string icon: {
+		if (charging)
+			return "battery_android_frame_bolt"
+		
+		if (level >= 90)
+			return "battery_android_full"
+		
+		if (level >= 80)
+			return "battery_android_6"
+
+		if (level >= 60)
+			return "battery_android_5"
+
+		if (level >= 50)
+			return "battery_android_4"
+		
+		if (level >= 40)
+			return "battery_android_3"
+		
+		if (level >= 30)
+			return "battery_android_2"
+
+		if (level >= 15)
+			return "battery_android_1"
+		
+		if (level >= 5)
+			return "battery_android_0"
+
+		return "battery_android_0"
+	}
+
+    id: root
+
+    anchors.verticalCenter: parent.verticalCenter
+
+    implicitHeight: battery_icon.height
+    implicitWidth: battery_icon.width
+
+    color: "transparent"
+
+    radius: Vars.rad
+
+    MouseArea {
+		id: root_mouse
+		anchors.fill: parent
+        onClicked: {
+            print("battery clicked.")
+        }
+	}
+
+    Text {
+		id: battery_icon
+		text: icon
+		color: level > 40 ? Colors.cyan : (level < 25 ? Colors.red : Colors.yellow)
+
+		font {
+			family: "Material Symbols Rounded"
+			pixelSize: 25
+			variableAxes: (
+				{
+					"opsz": 50,
+					"wght": 200
+				}
+			)
+		}
+    }
+}

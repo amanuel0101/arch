@@ -1,34 +1,45 @@
 import QtQuick
 import "theme" as Theme
 import ".."
+import Quickshell.Widgets
 
 Item {
-    id: bar
+    id: root
 
     anchors.fill: parent
 
+    MouseArea {
+        id: bar_mouse
+
+        anchors.fill: parent
+
+        onDoubleClicked: {
+            AppState.bar_expanded = !AppState.bar_expanded
+        }
+    }
+
     Rectangle {
         id: btn
-        width: 22
-        height: 22
+        width: 20
+        height: 20
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
         anchors.leftMargin: Vars.bar_edge_space
         radius: 20
         color: "transparent"
-        border {
-            width: 1
-            color: Theme.Colors.green
-        }
 
-        Text {
-            text: "launch"
-            anchors.centerIn: parent
-            color: Theme.Colors.green
-            font {
-                pixelSize: 16
-                family: "Material Symbols Rounded"
-            }
+        IconImage {
+            anchors.fill: parent
+            // text: "launch"
+            // anchors.centerIn: parent
+            // color: Theme.Colors.green
+            // font {
+            //     pixelSize: 16
+            //     family: "Material Symbols Rounded"
+            // }
+
+            source: "file:///home/arch/airootfs/root/configs/quickshell/bar/icons/arch.svg"
+            mipmap: true
         }
         MouseArea {
             anchors.fill: parent
@@ -50,6 +61,7 @@ Item {
 
         anchors.right: parent.right
         anchors.rightMargin: Vars.bar_edge_space
+        anchors.verticalCenter: parent.verticalCenter
 
         implicitHeight: Vars.bar_height
         implicitWidth: right_stat_row.width
@@ -66,8 +78,43 @@ Item {
 
             spacing: 5
 
-            Network {
-                id: network
+            Row {
+                id: right_2
+                visible: opacity > 0
+
+                opacity: AppState.bar_expanded ? 1 : 0
+
+                Behavior on opacity {
+                    NumAnim {}
+                }
+
+                anchors.verticalCenter: parent.verticalCenter
+
+                spacing: 5
+
+                VolTune {
+                    id: vol_tune
+                }
+            }
+
+            // Bluetooth {
+            //     id: bluetooth
+            // }
+
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+
+                implicitHeight: width
+                implicitWidth: network.width
+
+                radius: Vars.rad
+
+                color: "transparent"
+
+                Network {
+                    id: network
+                    anchors.centerIn: parent
+                }
             }
 
             Battery {

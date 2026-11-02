@@ -1,9 +1,19 @@
+import Quickshell
 import QtQuick
 import Quickshell.Widgets
 import Quickshell.Services.Pipewire
-import "components/theme" as Theme
+import "./theme" as Theme
 
 Item {
+    id: volume
+
+    anchors.fill: parent
+    clip: true
+
+    PwObjectTracker {
+        objects: [sink]
+    }
+
     property var sink: Pipewire.defaultAudioSink
     readonly property bool ready: {
         return sink && sink.ready;
@@ -33,60 +43,23 @@ Item {
         return String.fromCodePoint(984446);
     }
 
-    id: root
-
-    anchors.fill: parent
-    clip: true
-
-    // keep tracking
-    PwObjectTracker {
-        objects: [sink]
-    }
-
     Row {
         anchors.centerIn: parent
-
+        height: parent.height - 1
         spacing: 10
-
-        Rectangle {
+        Text {
+            text: icon
+            color: muted || !ready ? Theme.Colors.red : Theme.Colors.foreground
             anchors.verticalCenter: parent.verticalCenter
-            
-            implicitHeight: icon_dummy.height
-            implicitWidth: icon_dummy.width
-
-            color: "transparent"
-
-            Text {
-                id: icon_dummy
-
-                text: String.fromCodePoint(984446)
-
-                visible: false
-
-                font {
-                    family: "Material Symbols Rounded"
-                    pixelSize: 20
-                }
-            }
-            Text {
-                id: vol_icon
-
-                text: icon
-
-                anchors.left: parent.left
-
-                color: muted || !ready ? Theme.Colors.red : Theme.Colors.foreground
-
-                font {
-                    family: "Material Symbols Rounded"
-                    pixelSize: 20
-                }
+            font {
+                family: "Material Symbols Rounded"
+                pixelSize: 20
             }
         }
 
         ClippingRectangle {
             implicitHeight: parent.height / 6
-            implicitWidth: (root.width - 100)
+            implicitWidth: (morpher.width - 100)
             anchors.verticalCenter: parent.verticalCenter
             radius: morpher.radius
             color: Qt.lighter(Theme.Colors.background, 1.5)
@@ -101,34 +74,27 @@ Item {
         }
 
         Text {
-            id: lvl_dummy
-            text: "100%"
-            visible: false
-
-            font {
-                family: "SF Mono"
-                pixelSize: 15
-            }
-        }
-        Rectangle {
-            anchors.verticalCenter: parent.verticalCenter
-
-            implicitHeight: lvl_dummy.height
-            implicitWidth: lvl_dummy.width
-
-            color: "transparent"
-
             Text {
-                text: vol + "%"
-
-                anchors.right: parent.right
-
+                id: dummy
+                text: "100%"
+                visible: false
                 color: Theme.Colors.foreground
+                anchors.verticalCenter: parent.verticalCenter
 
                 font {
                     family: "SF Mono"
                     pixelSize: 15
                 }
+            }
+
+            text: vol + "%"
+            color: Theme.Colors.foreground
+            anchors.verticalCenter: parent.verticalCenter
+            width: dummy.width
+
+            font {
+                family: "SF Mono"
+                pixelSize: 15
             }
         }
     }

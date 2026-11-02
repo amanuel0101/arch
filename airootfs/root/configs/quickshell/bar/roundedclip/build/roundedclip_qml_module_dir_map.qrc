@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/">
+    <file alias="/RoundedClip">/home/arch/airootfs/root/configs/quickshell/bar/roundedclip/build</file>
+
+  </qresource>
+</RCC>

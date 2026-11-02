@@ -2,28 +2,31 @@ import Quickshell
 import QtQuick
 import Quickshell.Widgets
 import Quickshell.Io
-import "components/theme" as Theme
+import "theme" as Theme
 
 
 Item {
     id: brightness
 
     anchors.fill: parent
+
     clip: true
 
     Component.onCompleted: {
-    brightnessFile.reload()
-    maxBrightnessFile.reload()
-}
+        brightnessFile.reload()
+        maxBrightnessFile.reload()
+    }
 
 
     FileView {
         id: brightnessFile
 
         path: "/sys/class/backlight/intel_backlight/brightness"
+
         watchChanges: true
 
         onFileChanged: reload()
+
         onTextChanged: updateBrightness()
     }
 
@@ -64,7 +67,7 @@ Item {
         }
 
         ClippingRectangle {
-            implicitHeight: parent.height / 6
+            implicitHeight: parent.height / 5
             implicitWidth: (morpher.width - 100)
             anchors.verticalCenter: parent.verticalCenter
             radius: morpher.radius
@@ -73,7 +76,6 @@ Item {
             Rectangle {
                 color: Theme.Colors.foreground
                 anchors.verticalCenter: parent.verticalCenter
-                radius: 30
                 implicitHeight: parent.height
                 implicitWidth: parent.width * (level / 100)
             }

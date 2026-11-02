@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/RoundedClip">
+    <file alias="qmldir">/home/arch/airootfs/root/configs/quickshell/bar/roundedclip/build/qmldir</file>
+  </qresource>
+</RCC>
+

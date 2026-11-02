@@ -1,0 +1,1 @@
+/home/arch/airootfs/root/configs/quickshell/bar/roundedclip/build/roundedclip_autogen/include/../EWIEGA46WW/moc_roundedclip.cpp.json

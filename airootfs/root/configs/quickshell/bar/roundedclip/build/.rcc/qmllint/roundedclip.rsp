@@ -1,0 +1,9 @@
+--bare
+-I
+/home/arch/airootfs/root/configs/quickshell/bar/roundedclip/build
+-I
+/home/arch/airootfs/root/configs/quickshell/bar/roundedclip/build
+-I
+/usr/lib/qt6/qml
+--resource
+/home/arch/airootfs/root/configs/quickshell/bar/roundedclip/build/.qt/rcc/qmake_RoundedClip.qrc

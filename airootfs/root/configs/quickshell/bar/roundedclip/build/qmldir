@@ -1,0 +1,8 @@
+module RoundedClip
+linktarget roundedclipplugin
+optional plugin roundedclipplugin
+classname RoundedClipPlugin
+typeinfo roundedclip.qmltypes
+prefer :/RoundedClip/
+depends QtQuick
+

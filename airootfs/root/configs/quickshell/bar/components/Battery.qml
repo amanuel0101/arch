@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell.Services.UPower
+import QtQuick.Effects
 import "theme"
 import ".."
 
@@ -71,6 +72,31 @@ Rectangle {
 					"wght": 200
 				}
 			)
+		}
+
+		Text {
+			id: battery_lable
+			text: level
+			visible: level < 100
+			color: "white"
+			anchors.right: parent.right
+			anchors.verticalCenter: parent.verticalCenter
+			anchors.rightMargin: (parent.width - width) / (level < 10 ? 1.8 : (level===100 ? 1.6 : 1.7))
+
+			font {
+				family: "SF Mono"
+				pixelSize: 10
+				weight: 700
+			}
+
+			RectangularShadow {
+				anchors.fill: parent
+				radius: root.radius
+				color: Qt.rgba(0, 0, 0, 0.5)
+				spread: st === "notification" ? 5 : 0
+				z: -1
+				blur: 8
+			}
 		}
     }
 }

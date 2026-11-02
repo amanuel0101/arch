@@ -1,0 +1,5 @@
+set(__QT_DEPLOY_TARGETS "roundedclip;roundedclipplugin")
+set(__QT_DEPLOY_TARGET_roundedclip_FILE /home/arch/airootfs/root/configs/quickshell/bar/roundedclip/build/libroundedclip.so)
+set(__QT_DEPLOY_TARGET_roundedclip_TYPE SHARED_LIBRARY)
+set(__QT_DEPLOY_TARGET_roundedclipplugin_FILE /home/arch/airootfs/root/configs/quickshell/bar/roundedclip/build/libroundedclipplugin.so)
+set(__QT_DEPLOY_TARGET_roundedclipplugin_TYPE MODULE_LIBRARY)

@@ -15,6 +15,28 @@ Rectangle {
     color: "transparent"
 
     radius: Vars.rad
+    
+    
+    // Timer {
+    //     id: ti
+    //     interval: 1000
+    //     onTriggered: {
+    //         if (!(AppState.morpher_state === "bar") && AppState.bar_locked)
+    //             return
+    //         morpher.anchors.topMargin = AppState.bar_locked ? morpher.anchors.topMargin : -(Vars.bar_height)
+    //     }
+    // }
+
+    // Connections {
+    //     target: Hyprland
+
+    //     function onFocusedWorkspaceChanged() {
+    //         if (!(morpher.anchors.topMargin < 0) && !(AppState.morpher_state === "bar") && AppState.bar_locked)
+    //             return
+    //         morpher.anchors.topMargin = 3
+    //         ti.restart()
+    //     }
+    // }
 
     Row {
         id: ws_row

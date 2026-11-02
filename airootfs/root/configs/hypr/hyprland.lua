@@ -1,0 +1,5 @@
+require("modules.monitors")
+require("modules.autostart")
+require("modules.bindings")
+require("modules.looknfeel")
+require("modules.animations")

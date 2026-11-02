@@ -1,0 +1,327 @@
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import Quickshell.Widgets
+import QtQuick.Controls
+import QtQuick.Effects
+import "theme"
+import ".."
+
+Rectangle {
+    property string folder: Quickshell.env("HOME") + "/Pictures/backgrounds"
+    property string current_wall: ""
+    property int current_wall_idx: walls.indexOf(current_wall)
+    property var walls: []
+    property bool active: AppState.morpher_state === "wallpaper"
+    property int wall_width: 250
+    onActiveChanged: {
+        if (!active) {
+            flick.contentX = current_wall_idx * (wall_width + 5)
+            // flick.contentX = 0
+        }
+        else {
+            proc.running = active
+        }
+    }
+
+    Process {
+        id: get_curr_wall
+
+        running: true
+
+        command: [
+            "readlink",
+            "-e",
+            "/home/.config/current/background.jpg"
+        ]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.current_wall = text.trim()
+            }
+        }
+    }
+
+    Process {
+        id: proc
+
+        command: ["find", folder, "-maxdepth", "1", "-type", "f"]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                walls = text.trim().split("\n")
+            }
+        }
+    }
+
+    Process {
+        property string to_set: ""
+        id: proc_set_wallpaper
+        command: [
+    "sh", "-c",
+    'ln -sfn "$1" "$HOME/.config/current/background.jpg" && hyprctl hyprpaper wallpaper "eDP-1, $HOME/.config/current/background.jpg, cover"',
+    "sh",
+    to_set
+]
+        onExited: (code, status) => {
+        if (!code) {
+            current_wall = to_set
+            flick.contentX = current_wall_idx * (wall_width + 5)
+        }
+    }
+    }
+
+    function set_wallpaper(path) {
+        proc_set_wallpaper.to_set = path
+        proc_set_wallpaper.running = true
+    }
+
+    id: root
+    
+    anchors.fill: parent
+
+    color: "transparent"
+
+    radius: Vars.rad
+
+    Text {
+        id: folder_name
+        text: folder
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.topMargin: 10
+        anchors.leftMargin: parent.radius
+
+        color: Colors.foreground
+
+        font {
+            family: "SF Mono"
+
+        }
+    }
+    Text {
+        id: counter
+        text: (flick.sel + 1) + "/" + walls.length
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: 10
+        anchors.rightMargin: parent.radius
+
+        color: Colors.foreground
+
+        font {
+            family: "SF Mono"
+
+        }
+    }
+
+    ClippingRectangle {
+        id: walls_container
+
+        anchors.bottom: parent.bottom 
+        implicitHeight: parent.height - (folder_name.height + folder_name.anchors.topMargin) - (counter.height + counter.anchors.topMargin)
+        implicitWidth: parent.width
+
+        color: "transparent"
+
+        focus: active
+
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Right) {
+                flick.flick(-(wall_width + row.spacing)*3, 0)
+                event.accepted = true
+            }
+            else if (event.key === Qt.Key_Left) {
+                flick.flick((wall_width + row.spacing)*5, 0)
+                event.accepted = true
+            }
+            else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
+                print("f")
+                set_wallpaper(walls[flick.sel])
+                event.accepted = true
+            }
+        }
+
+        //radius: parent.radius
+
+        Flickable {
+            property int sel: 0
+            id: flick
+            anchors.fill: parent
+            contentWidth: row.width
+
+            ScrollBar.horizontal: ScrollBar {
+                policy: ScrollBar.AlwaysOn
+                height: 7
+            }
+
+            onMovementStarted: {
+                mid_.opacity = 0.25
+            }
+
+            // snapping mov't
+            onMovementEnded: {
+                var item_width = wall_width + row.spacing
+                var index = Math.round(contentX / item_width)
+                sel = index
+                var item_center = index * item_width
+                contentX = item_center
+                Qt.callLater(function(){mid_.opacity = 1})
+            }
+
+            Behavior on contentX {
+                NumberAnimation {
+                    duration: 250
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Row {
+                id: row
+                anchors.verticalCenter: parent.verticalCenter
+                height: parent.height
+                leftPadding: (walls_container.width / 2) - (wall_width / 2)
+                rightPadding: (walls_container.width / 2) - (wall_width / 2)
+                spacing: 5
+
+                Repeater {
+                    model: walls
+
+                    delegate: Item {
+                        required property var modelData
+                        required property int index
+
+                        property bool is_set: current_wall === modelData
+
+                        property real distance: flick// - flick.width / 2)// current x
+                        property bool is_center: Math.round(flick.contentX) === Math.round(index * (width + 5))
+
+                        Component.onCompleted: {
+                            if(is_set) {
+                                flick.contentX = index * (width + 5)
+                            }
+                        }
+
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        implicitHeight: parent.height / 1.25
+                        implicitWidth: wall_width
+
+                        ClippingRectangle {
+                            id: rec
+
+                            implicitHeight: parent.height
+                            implicitWidth: 250
+
+                            radius: Vars.rad
+
+                            color: Qt.lighter(Colors.background, 1.25)
+
+                            scale: is_center ? 1.05 : 0.7
+
+                            Behavior on scale {
+                                NumberAnimation {
+                                    duration: 250
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
+
+                            Image {
+                                anchors.fill: parent
+                                asynchronous: true
+                                cache: true
+                                antialiasing: true
+                                source: modelData
+
+                                sourceSize.height: 200
+                                sourceSize.width: 300
+                            }
+                            MouseArea {
+                                id: rec_mouse
+
+                                anchors.fill: parent
+
+                                acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                                onClicked: (mouse) => {
+                                    if (mouse.button === Qt.LeftButton) {
+                                        flick.contentX = index * (width + 5)
+                                    }
+                                    else if (mouse.button === Qt.RightButton) {
+                                        flick.contentX = index * (width + 5); set_wallpaper(modelData)
+                                    }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            visible: is_set
+                            anchors.fill: rec
+                            color: "transparent"
+                            radius: Vars.rad
+                            scale: is_center ? 1.05 : 0.7
+
+                            border {
+                                width: 2
+                                color: Colors.green
+                            }
+
+                            MultiEffect {
+        anchors.fill: parent
+        source: parent
+
+        shadowEnabled: true
+        shadowColor: "#aa000000"
+        shadowBlur: 10
+        shadowScale: 10
+    }
+
+                            Behavior on scale {
+                                NumberAnimation {
+                                    duration: 250
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            id: mid_
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 6
+
+            implicitHeight: mid__mouse.containsMouse ? 8 : 3
+            implicitWidth: 32
+
+            color: Colors.foreground
+
+            opacity: 1
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 150
+                }
+            }
+            Behavior on implicitHeight {
+                NumberAnimation {
+                    duration: 150
+                }
+            }
+
+
+            radius: Vars.rad
+
+            MouseArea {
+                id: mid__mouse
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: {
+                    flick.contentX = current_wall_idx * (wall_width + 5)
+                }
+            }
+        }
+    }
+}
